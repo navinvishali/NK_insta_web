@@ -593,10 +593,7 @@
 
     function formatPostTimestamp(post) {
 
-      /*
-        Display ONLY the Date column from the Google Sheet.
-      */
-
+      // Display ONLY the Google Sheet Date column.
       if (
         post.Date === null ||
         post.Date === undefined ||
@@ -608,7 +605,6 @@
       return String(post.Date).trim();
     }
 
-
     /*
       =====================================================
       DATE FILTER HELPERS
@@ -619,73 +615,54 @@
 
       /*
         IMPORTANT:
-        The website uses ONLY the "Date" column from
-        the Google Sheet / Excel data returned by the Worker.
-
-        No timestamp, createdAt, postedAt, time, Instagram
-        date, or other field is used.
+        ONLY the Google Sheet "Date" column is used.
+        No Instagram date or other timestamp field is used.
       */
 
-      const rawValue = post.Date;
-
       if (
-        rawValue === null ||
-        rawValue === undefined ||
-        String(rawValue).trim() === ""
+        post.Date === null ||
+        post.Date === undefined ||
+        String(post.Date).trim() === ""
       ) {
         return null;
       }
 
-      const text = String(rawValue).trim();
+      const value = String(post.Date).trim();
 
-      // YYYY-MM-DD or YYYY/MM/DD
-      let match = text.match(
+      // YYYY-MM-DD / YYYY/MM/DD
+      let match = value.match(
         /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/
       );
 
       if (match) {
-        const year = Number(match[1]);
-        const month = Number(match[2]);
-        const day = Number(match[3]);
-
-        const date = new Date(
-          year,
-          month - 1,
-          day
+        return makeValidDate(
+          Number(match[1]),
+          Number(match[2]),
+          Number(match[3])
         );
-
-        return isNaN(date.getTime())
-          ? null
-          : date;
       }
 
       // DD/MM/YYYY or DD-MM-YYYY
-      match = text.match(
+      match = value.match(
         /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/
       );
 
       if (match) {
-        const day = Number(match[1]);
-        const month = Number(match[2]);
         let year = Number(match[3]);
 
         if (year < 100) {
           year += 2000;
         }
 
-        const date = new Date(
+        return makeValidDate(
           year,
-          month - 1,
-          day
+          Number(match[2]),
+          Number(match[1])
         );
-
-        return isNaN(date.getTime())
-          ? null
-          : date;
       }
 
       // DD Mon YYYY / DD Month YYYY
-      match = text.match(
+      match = value.match(
         /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{2,4})/
       );
 
@@ -696,16 +673,60 @@
           year += 2000;
         }
 
-        const date = new Date(
-          `${match[1]} ${match[2]} ${year}`
+        const monthNames = [
+          "jan", "feb", "mar", "apr", "may", "jun",
+          "jul", "aug", "sep", "oct", "nov", "dec"
+        ];
+
+        const monthText = match[2].toLowerCase();
+        const monthIndex = monthNames.findIndex(
+          month => monthText.startsWith(month)
         );
 
-        return isNaN(date.getTime())
-          ? null
-          : date;
+        if (monthIndex !== -1) {
+          return makeValidDate(
+            year,
+            monthIndex + 1,
+            Number(match[1])
+          );
+        }
+      }
+
+      // Google Sheets may sometimes return a full date/time string.
+      // Still use ONLY post.Date.
+      const fallback = new Date(value);
+
+      if (!isNaN(fallback.getTime())) {
+        return new Date(
+          fallback.getFullYear(),
+          fallback.getMonth(),
+          fallback.getDate()
+        );
       }
 
       return null;
+    }
+
+
+    function makeValidDate(year, month, day) {
+
+      const date = new Date(
+        year,
+        month - 1,
+        day
+      );
+
+      // Prevent JavaScript from accepting invalid dates
+      // such as 31/02/2026.
+      if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+      ) {
+        return null;
+      }
+
+      return date;
     }
 
 
@@ -763,35 +784,37 @@
 
       const postDate = parsePostDate(post);
 
-      // Posts without a usable date are excluded
-      // when a date filter is active.
+      // If the Sheet Date is missing/invalid, it cannot
+      // match an active date filter.
       if (!postDate) {
         return false;
       }
 
-      const postDay = dateOnly(postDate);
+      // Convert the Sheet date to the exact same format
+      // used by the HTML date inputs: YYYY-MM-DD.
+      const postDateString =
+        postDate.getFullYear() +
+        "-" +
+        String(postDate.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(postDate.getDate()).padStart(2, "0");
 
-      if (activeFromDate) {
-        const fromDate =
-          dateOnly(new Date(activeFromDate + "T00:00:00"));
-
-        if (postDay < fromDate) {
-          return false;
-        }
+      if (
+        activeFromDate &&
+        postDateString < activeFromDate
+      ) {
+        return false;
       }
 
-      if (activeToDate) {
-        const toDate =
-          dateOnly(new Date(activeToDate + "T00:00:00"));
-
-        if (postDay > toDate) {
-          return false;
-        }
+      if (
+        activeToDate &&
+        postDateString > activeToDate
+      ) {
+        return false;
       }
 
       return true;
     }
-
 
     /*
       =====================================================
