@@ -87,6 +87,54 @@
       color: white;
     }
 
+    /* Date filters */
+    .date-filter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .date-filter label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .date-filter input {
+      border: 1px solid #ddd;
+      background: white;
+      padding: 9px 11px;
+      border-radius: 10px;
+      font-size: 13px;
+      color: #333;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      cursor: pointer;
+    }
+
+    .date-action-btn {
+      border: none;
+      padding: 10px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      background: #111;
+      color: white;
+      transition: 0.2s;
+    }
+
+    .date-action-btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.9;
+    }
+
+    .date-clear-btn {
+      background: #e9e9e9;
+      color: #333;
+    }
+
     /* Status */
     #status {
       text-align: center;
@@ -229,6 +277,26 @@
       .post-timestamp {
         font-size: 9px;
       }
+
+      .date-filter {
+        width: 100%;
+        gap: 6px;
+      }
+
+      .date-filter label {
+        font-size: 11px;
+      }
+
+      .date-filter input {
+        font-size: 11px;
+        padding: 8px;
+      }
+
+      .date-action-btn {
+        font-size: 11px;
+        padding: 8px 12px;
+      }
+
     }
   </style>
 </head>
@@ -243,13 +311,37 @@
 
   <main>
 
-    <!-- Category filters -->
+    <!-- Category and Date filters -->
     <div class="controls">
+
       <div id="filters"></div>
+
+      <div class="date-filter">
+        <label for="fromDate">From:</label>
+        <input type="date" id="fromDate">
+
+        <label for="toDate">To:</label>
+        <input type="date" id="toDate">
+
+        <button
+          class="date-action-btn"
+          onclick="applyDateFilter()"
+        >
+          🔎 Apply
+        </button>
+
+        <button
+          class="date-action-btn date-clear-btn"
+          onclick="clearDateFilter()"
+        >
+          ✕ Clear
+        </button>
+      </div>
 
       <button class="refresh-btn" onclick="loadPosts()">
         🔄 Refresh
       </button>
+
     </div>
 
     <!-- Status -->
@@ -287,6 +379,8 @@
 
     let allPosts = [];
     let activeCategory = "All";
+    let activeFromDate = "";
+    let activeToDate = "";
 
 
     /*
@@ -500,154 +594,202 @@
     function formatPostTimestamp(post) {
 
       /*
-        Your Google Sheet should have a separate
-        Date column.
-
-        Example:
-
-        Date
-        06 Oct 2026
-
-        The value is displayed exactly as returned
-        by the Cloudflare Worker.
+        Display ONLY the Date column from the Google Sheet.
       */
 
-      const possibleFields = [
+      if (
+        post.Date === null ||
+        post.Date === undefined ||
+        String(post.Date).trim() === ""
+      ) {
+        return "Date unavailable";
+      }
 
-        "date",
+      return String(post.Date).trim();
+    }
 
-        "Date",
 
-        "postedDate",
+    /*
+      =====================================================
+      DATE FILTER HELPERS
+      =====================================================
+    */
 
-        "Posted Date",
-
-        "posted_date",
-
-        "timestamp",
-
-        "Timestamp",
-
-        "createdAt",
-
-        "created_at",
-
-        "postedAt",
-
-        "posted_at",
-
-        "time",
-
-        "Time"
-      ];
-
+    function parsePostDate(post) {
 
       /*
-        First check the expected Date fields.
+        IMPORTANT:
+        The website uses ONLY the "Date" column from
+        the Google Sheet / Excel data returned by the Worker.
+
+        No timestamp, createdAt, postedAt, time, Instagram
+        date, or other field is used.
       */
 
-      for (
-        const field
-        of possibleFields
+      const rawValue = post.Date;
+
+      if (
+        rawValue === null ||
+        rawValue === undefined ||
+        String(rawValue).trim() === ""
       ) {
+        return null;
+      }
 
-        if (
+      const text = String(rawValue).trim();
 
-          Object.prototype
-            .hasOwnProperty
-            .call(
-              post,
-              field
-            )
+      // YYYY-MM-DD or YYYY/MM/DD
+      let match = text.match(
+        /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/
+      );
 
-          &&
+      if (match) {
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
 
-          post[field] !==
-            null
+        const date = new Date(
+          year,
+          month - 1,
+          day
+        );
 
-          &&
+        return isNaN(date.getTime())
+          ? null
+          : date;
+      }
 
-          post[field] !==
-            undefined
+      // DD/MM/YYYY or DD-MM-YYYY
+      match = text.match(
+        /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/
+      );
 
-          &&
+      if (match) {
+        const day = Number(match[1]);
+        const month = Number(match[2]);
+        let year = Number(match[3]);
 
-          String(
-            post[field]
-          ).trim() !== ""
+        if (year < 100) {
+          year += 2000;
+        }
 
-        ) {
+        const date = new Date(
+          year,
+          month - 1,
+          day
+        );
 
-          return String(
-            post[field]
-          ).trim();
+        return isNaN(date.getTime())
+          ? null
+          : date;
+      }
+
+      // DD Mon YYYY / DD Month YYYY
+      match = text.match(
+        /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{2,4})/
+      );
+
+      if (match) {
+        let year = Number(match[3]);
+
+        if (year < 100) {
+          year += 2000;
+        }
+
+        const date = new Date(
+          `${match[1]} ${match[2]} ${year}`
+        );
+
+        return isNaN(date.getTime())
+          ? null
+          : date;
+      }
+
+      return null;
+    }
+
+
+    function dateOnly(date) {
+
+      return new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
+    }
+
+
+    function applyDateFilter() {
+
+      const fromInput =
+        document.getElementById("fromDate").value;
+
+      const toInput =
+        document.getElementById("toDate").value;
+
+      if (
+        fromInput &&
+        toInput &&
+        fromInput > toInput
+      ) {
+        alert("From date cannot be later than To date.");
+        return;
+      }
+
+      activeFromDate = fromInput;
+      activeToDate = toInput;
+
+      displayPosts();
+    }
+
+
+    function clearDateFilter() {
+
+      document.getElementById("fromDate").value = "";
+      document.getElementById("toDate").value = "";
+
+      activeFromDate = "";
+      activeToDate = "";
+
+      displayPosts();
+    }
+
+
+    function matchesDateFilter(post) {
+
+      if (!activeFromDate && !activeToDate) {
+        return true;
+      }
+
+      const postDate = parsePostDate(post);
+
+      // Posts without a usable date are excluded
+      // when a date filter is active.
+      if (!postDate) {
+        return false;
+      }
+
+      const postDay = dateOnly(postDate);
+
+      if (activeFromDate) {
+        const fromDate =
+          dateOnly(new Date(activeFromDate + "T00:00:00"));
+
+        if (postDay < fromDate) {
+          return false;
         }
       }
 
+      if (activeToDate) {
+        const toDate =
+          dateOnly(new Date(activeToDate + "T00:00:00"));
 
-      /*
-        If the Worker uses another
-        column name, look for a
-        date-like value.
-      */
-
-      for (
-        const key
-        of Object.keys(post)
-      ) {
-
-        const value =
-          post[key];
-
-        if (
-
-          value === null ||
-
-          value === undefined ||
-
-          String(
-            value
-          ).trim() === ""
-
-        ) {
-
-          continue;
-        }
-
-        const text =
-          String(
-            value
-          ).trim();
-
-
-        /*
-          DD/MM/YYYY
-          DD-MM-YYYY
-        */
-
-        if (
-
-          /^(?:\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/
-            .test(text)
-
-          ||
-
-          /^(?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/
-            .test(text)
-
-          ||
-
-          /^(?:\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})/
-            .test(text)
-
-        ) {
-
-          return text;
+        if (postDay > toDate) {
+          return false;
         }
       }
 
-
-      return "Date unavailable";
+      return true;
     }
 
 
@@ -676,23 +818,19 @@
       let filteredPosts;
 
 
-      if (
-        activeCategory ===
-        "All"
-      ) {
+      filteredPosts = allPosts.filter(
+        post => {
 
-        filteredPosts =
-          allPosts;
+          const categoryMatches =
+            activeCategory === "All" ||
+            post.category === activeCategory;
 
-      } else {
+          const dateMatches =
+            matchesDateFilter(post);
 
-        filteredPosts =
-          allPosts.filter(
-            post =>
-              post.category ===
-              activeCategory
-          );
-      }
+          return categoryMatches && dateMatches;
+        }
+      );
 
 
       /*
@@ -721,6 +859,42 @@
         Number of posts
       */
 
+      let filterDescription = "";
+
+      if (activeFromDate || activeToDate) {
+
+        const fromText =
+          activeFromDate
+            ? new Date(
+                activeFromDate + "T00:00:00"
+              ).toLocaleDateString(
+                "en-IN",
+                {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric"
+                }
+              )
+            : "Beginning";
+
+        const toText =
+          activeToDate
+            ? new Date(
+                activeToDate + "T00:00:00"
+              ).toLocaleDateString(
+                "en-IN",
+                {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric"
+                }
+              )
+            : "Today";
+
+        filterDescription =
+          ` | ${fromText} → ${toText}`;
+      }
+
       status.textContent =
         `${
           filteredPosts.length
@@ -729,7 +903,7 @@
           1
             ? ""
             : "s"
-        }`;
+        }${filterDescription}`;
 
 
       /*
@@ -934,6 +1108,36 @@
       START WEBSITE
       =====================================================
     */
+
+
+    // Keep the From/To date controls consistent.
+    document.getElementById("fromDate").addEventListener(
+      "change",
+      function () {
+        const toDate =
+          document.getElementById("toDate");
+
+        if (this.value) {
+          toDate.min = this.value;
+        } else {
+          toDate.removeAttribute("min");
+        }
+      }
+    );
+
+    document.getElementById("toDate").addEventListener(
+      "change",
+      function () {
+        const fromDate =
+          document.getElementById("fromDate");
+
+        if (this.value) {
+          fromDate.max = this.value;
+        } else {
+          fromDate.removeAttribute("max");
+        }
+      }
+    );
 
     loadPosts();
 
