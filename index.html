@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>NK Instagram</title>
+
+  <!-- Instagram official embed script -->
+  <script async src="https://www.instagram.com/embed.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f5f7;
+      color: #222;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+      color: white;
+      padding: 32px 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: 800;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      font-size: 15px;
+      opacity: 0.95;
+    }
+
+    /* Main */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 25px 15px 50px;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+    }
+
+    .filter-btn,
+    .refresh-btn {
+      border: none;
+      padding: 10px 18px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      background: white;
+      color: #444;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: 0.2s;
+    }
+
+    .filter-btn:hover,
+    .refresh-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .filter-btn.active {
+      background: #111;
+      color: white;
+    }
+
+    .refresh-btn {
+      background: #833ab4;
+      color: white;
+    }
+
+    /* Status */
+    #status {
+      text-align: center;
+      margin: 15px 0 25px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    /* Posts - equal-size cards */
+    #posts {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      align-items: stretch;
+      gap: 18px;
+      width: 100%;
+    }
+
+    .post-card {
+      width: 100%;
+      min-width: 0;
+      height: 430px;
+      background: white;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top information area */
+    .post-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      margin-bottom: 8px;
+      padding: 0 2px;
+    }
+
+    .post-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Date shown at top */
+    .post-timestamp {
+      font-size: 11px;
+      color: #777;
+      font-weight: 600;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .category {
+      background: #f0e6ff;
+      color: #6a1b9a;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .media {
+      background: #f1f1f1;
+      color: #555;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Instagram */
+    .instagram-container {
+      width: 100%;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .instagram-container .instagram-media {
+      max-width: 100% !important;
+      min-width: 0 !important;
+      width: auto !important;
+      margin: 0 !important;
+    }
+
+    /* Empty / error */
+    .message {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+      font-size: 15px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 25px;
+      color: #888;
+      font-size: 13px;
+    }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+
+      header {
+        padding: 25px 15px;
+      }
+
+      header h1 {
+        font-size: 26px;
+      }
+
+      main {
+        padding: 20px 10px 40px;
+      }
+
+      #posts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .post-card {
+        width: 100%;
+        height: 390px;
+        padding: 7px;
+        border-radius: 10px;
+      }
+
+      .category,
+      .media {
+        padding: 4px 7px;
+        font-size: 10px;
+      }
+
+      .post-timestamp {
+        font-size: 9px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header>
+    <h1>📸 NK Instagram</h1>
+    <p>My Instagram collection</p>
+  </header>
+
+  <main>
+
+    <!-- Category filters -->
+    <div class="controls">
+      <div id="filters"></div>
+
+      <button class="refresh-btn" onclick="loadPosts()">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <!-- Status -->
+    <div id="status">
+      Loading Instagram posts...
+    </div>
+
+    <!-- Posts -->
+    <section id="posts"></section>
+
+  </main>
+
+  <footer>
+    Instagram posts are embedded directly from Instagram.
+  </footer>
+
+
+  <script>
+
+    /*
+      =====================================================
+      CLOUDFLARE WORKER
+      =====================================================
+    */
+
+    const WORKER_URL =
+      "https://nk-insta.navinvishali2025.workers.dev/";
+
+
+    /*
+      =====================================================
+      GLOBAL DATA
+      =====================================================
+    */
+
+    let allPosts = [];
+    let activeCategory = "All";
+
+
+    /*
+      =====================================================
+      LOAD POSTS FROM GOOGLE SHEET THROUGH WORKER
+      =====================================================
+    */
+
+    async function loadPosts() {
+
+      const status =
+        document.getElementById("status");
+
+      const postsContainer =
+        document.getElementById("posts");
+
+      status.textContent =
+        "Loading Instagram posts...";
+
+      postsContainer.innerHTML = "";
+
+      try {
+
+        const response =
+          await fetch(WORKER_URL);
+
+        if (!response.ok) {
+          throw new Error(
+            "Worker request failed"
+          );
+        }
+
+        const data =
+          await response.json();
+
+        if (!data.success) {
+          throw new Error(
+            data.error ||
+            "Unable to load posts"
+          );
+        }
+
+        allPosts =
+          data.posts || [];
+
+        createFilters();
+
+        displayPosts();
+
+      } catch (error) {
+
+        console.error(error);
+
+        status.textContent =
+          "Unable to load Instagram posts.";
+
+        postsContainer.innerHTML = `
+          <div class="message">
+            ❌ Unable to load posts.<br><br>
+            Please check the Cloudflare Worker
+            and Google Sheet.
+          </div>
+        `;
+      }
+    }
+
+
+    /*
+      =====================================================
+      CREATE CATEGORY FILTERS
+      =====================================================
+    */
+
+    function createFilters() {
+
+      const filtersContainer =
+        document.getElementById("filters");
+
+      filtersContainer.innerHTML = "";
+
+      const categories = [
+        "All",
+
+        ...new Set(
+          allPosts
+            .map(
+              post => post.category
+            )
+            .filter(
+              category => category
+            )
+        )
+      ];
+
+      categories.forEach(
+        category => {
+
+          const button =
+            document.createElement(
+              "button"
+            );
+
+          button.className =
+            "filter-btn";
+
+          if (
+            category ===
+            activeCategory
+          ) {
+
+            button.classList.add(
+              "active"
+            );
+          }
+
+          button.textContent =
+            category;
+
+          button.onclick =
+            function () {
+
+              activeCategory =
+                category;
+
+              createFilters();
+
+              displayPosts();
+            };
+
+          filtersContainer
+            .appendChild(button);
+        }
+      );
+    }
+
+
+    /*
+      =====================================================
+      NORMALIZE INSTAGRAM URL
+      =====================================================
+    */
+
+    function normalizeInstagramUrl(url) {
+
+      if (!url) {
+        return null;
+      }
+
+      try {
+
+        const parsed =
+          new URL(
+            url.trim()
+          );
+
+        if (
+          parsed.hostname !==
+            "www.instagram.com" &&
+          parsed.hostname !==
+            "instagram.com"
+        ) {
+
+          return null;
+        }
+
+        const parts =
+          parsed.pathname
+            .split("/")
+            .filter(Boolean);
+
+        if (
+          parts.length < 2
+        ) {
+
+          return null;
+        }
+
+        const type =
+          parts[0];
+
+        const id =
+          parts[1];
+
+        if (
+          type !== "p" &&
+          type !== "reel" &&
+          type !== "tv"
+        ) {
+
+          return null;
+        }
+
+        return `
+          https://www.instagram.com/
+          ${type}/${id}/
+        `.replace(/\s+/g, "");
+
+      } catch {
+
+        return null;
+      }
+    }
+
+
+    /*
+      =====================================================
+      GET DATE ENTERED IN GOOGLE SHEET
+      =====================================================
+    */
+
+    function formatPostTimestamp(post) {
+
+      /*
+        Your Google Sheet should have a separate
+        Date column.
+
+        Example:
+
+        Date
+        06 Oct 2026
+
+        The value is displayed exactly as returned
+        by the Cloudflare Worker.
+      */
+
+      const possibleFields = [
+
+        "date",
+
+        "Date",
+
+        "postedDate",
+
+        "Posted Date",
+
+        "posted_date",
+
+        "timestamp",
+
+        "Timestamp",
+
+        "createdAt",
+
+        "created_at",
+
+        "postedAt",
+
+        "posted_at",
+
+        "time",
+
+        "Time"
+      ];
+
+
+      /*
+        First check the expected Date fields.
+      */
+
+      for (
+        const field
+        of possibleFields
+      ) {
+
+        if (
+
+          Object.prototype
+            .hasOwnProperty
+            .call(
+              post,
+              field
+            )
+
+          &&
+
+          post[field] !==
+            null
+
+          &&
+
+          post[field] !==
+            undefined
+
+          &&
+
+          String(
+            post[field]
+          ).trim() !== ""
+
+        ) {
+
+          return String(
+            post[field]
+          ).trim();
+        }
+      }
+
+
+      /*
+        If the Worker uses another
+        column name, look for a
+        date-like value.
+      */
+
+      for (
+        const key
+        of Object.keys(post)
+      ) {
+
+        const value =
+          post[key];
+
+        if (
+
+          value === null ||
+
+          value === undefined ||
+
+          String(
+            value
+          ).trim() === ""
+
+        ) {
+
+          continue;
+        }
+
+        const text =
+          String(
+            value
+          ).trim();
+
+
+        /*
+          DD/MM/YYYY
+          DD-MM-YYYY
+        */
+
+        if (
+
+          /^(?:\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/
+            .test(text)
+
+          ||
+
+          /^(?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/
+            .test(text)
+
+          ||
+
+          /^(?:\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})/
+            .test(text)
+
+        ) {
+
+          return text;
+        }
+      }
+
+
+      return "Date unavailable";
+    }
+
+
+    /*
+      =====================================================
+      DISPLAY POSTS
+      =====================================================
+    */
+
+    function displayPosts() {
+
+      const postsContainer =
+        document.getElementById(
+          "posts"
+        );
+
+      const status =
+        document.getElementById(
+          "status"
+        );
+
+      postsContainer.innerHTML =
+        "";
+
+
+      let filteredPosts;
+
+
+      if (
+        activeCategory ===
+        "All"
+      ) {
+
+        filteredPosts =
+          allPosts;
+
+      } else {
+
+        filteredPosts =
+          allPosts.filter(
+            post =>
+              post.category ===
+              activeCategory
+          );
+      }
+
+
+      /*
+        No posts
+      */
+
+      if (
+        filteredPosts.length ===
+        0
+      ) {
+
+        status.textContent =
+          "";
+
+        postsContainer.innerHTML = `
+          <div class="message">
+            No Instagram posts found.
+          </div>
+        `;
+
+        return;
+      }
+
+
+      /*
+        Number of posts
+      */
+
+      status.textContent =
+        `${
+          filteredPosts.length
+        } Instagram post${
+          filteredPosts.length ===
+          1
+            ? ""
+            : "s"
+        }`;
+
+
+      /*
+        Create cards
+      */
+
+      filteredPosts.forEach(
+        post => {
+
+          const instagramUrl =
+            normalizeInstagramUrl(
+              post.url
+            );
+
+
+          if (!instagramUrl) {
+            return;
+          }
+
+
+          const card =
+            document.createElement(
+              "article"
+            );
+
+          card.className =
+            "post-card";
+
+
+          card.innerHTML = `
+
+            <div class="post-meta">
+
+              <!-- Date entered in Sheet -->
+              <div class="post-timestamp">
+                🕒 Posted:
+                ${escapeHtml(
+                  formatPostTimestamp(
+                    post
+                  )
+                )}
+              </div>
+
+
+              <div class="post-top-row">
+
+                <span class="category">
+                  ${escapeHtml(
+                    post.category ||
+                    "Other"
+                  )}
+                </span>
+
+                <span class="media">
+                  ${escapeHtml(
+                    post.media ||
+                    "Photo"
+                  )}
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="instagram-container">
+
+              <blockquote
+                class="instagram-media"
+                data-instgrm-permalink="${instagramUrl}"
+                data-instgrm-version="14"
+                style="
+                  background:#FFF;
+                  border:0;
+                  border-radius:3px;
+                  box-shadow:
+                    0 0 1px 0
+                    rgba(0,0,0,0.5),
+                    0 1px 10px 0
+                    rgba(0,0,0,0.15);
+                  margin:1px;
+                  max-width:540px;
+                  min-width:326px;
+                  padding:0;
+                  width:calc(100% - 2px);
+                "
+              >
+
+                <div
+                  style="
+                    padding:16px;
+                  "
+                >
+
+                  <a
+                    href="${instagramUrl}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style="
+                      text-decoration:none;
+                      color:#333;
+                    "
+                  >
+
+                    View this post
+                    on Instagram
+
+                  </a>
+
+                </div>
+
+              </blockquote>
+
+            </div>
+          `;
+
+
+          postsContainer
+            .appendChild(card);
+
+        }
+      );
+
+
+      /*
+        Process Instagram embeds
+      */
+
+      processInstagramEmbeds();
+    }
+
+
+    /*
+      =====================================================
+      PROCESS INSTAGRAM EMBEDS
+      =====================================================
+    */
+
+    function processInstagramEmbeds() {
+
+      if (
+
+        window.instgrm &&
+
+        window.instgrm.Embeds
+
+      ) {
+
+        window.instgrm
+          .Embeds
+          .process();
+
+      } else {
+
+        setTimeout(
+          processInstagramEmbeds,
+          500
+        );
+      }
+    }
+
+
+    /*
+      =====================================================
+      HTML ESCAPE
+      =====================================================
+    */
+
+    function escapeHtml(value) {
+
+      return String(value)
+
+        .replace(
+          /&/g,
+          "&amp;"
+        )
+
+        .replace(
+          /</g,
+          "&lt;"
+        )
+
+        .replace(
+          />/g,
+          "&gt;"
+        )
+
+        .replace(
+          /"/g,
+          "&quot;"
+        )
+
+        .replace(
+          /'/g,
+          "&#039;"
+        );
+    }
+
+
+    /*
+      =====================================================
+      START WEBSITE
+      =====================================================
+    */
+
+    loadPosts();
+
+  </script>
+
+</body>
+</html>
