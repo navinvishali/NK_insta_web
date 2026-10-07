@@ -1,7 +1,11 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>NK Instagram</title>
@@ -10,6 +14,7 @@
   <script async src="https://www.instagram.com/embed.js"></script>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
@@ -22,8 +27,15 @@
     }
 
     /* Header */
+
     header {
-      background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+      background: linear-gradient(
+        135deg,
+        #833ab4,
+        #fd1d1d,
+        #fcb045
+      );
+
       color: white;
       padding: 32px 20px;
       text-align: center;
@@ -42,6 +54,7 @@
     }
 
     /* Main */
+
     main {
       max-width: 1100px;
       margin: 0 auto;
@@ -49,6 +62,7 @@
     }
 
     /* Controls */
+
     .controls {
       display: flex;
       justify-content: center;
@@ -88,6 +102,7 @@
     }
 
     /* Date filters */
+
     .date-filter {
       display: flex;
       align-items: center;
@@ -136,6 +151,7 @@
     }
 
     /* Status */
+
     #status {
       text-align: center;
       margin: 15px 0 25px;
@@ -144,9 +160,14 @@
     }
 
     /* Posts - equal-size cards */
+
     #posts {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(280px, 1fr)
+      );
+
       align-items: stretch;
       gap: 18px;
       width: 100%;
@@ -166,6 +187,7 @@
     }
 
     /* Top information area */
+
     .post-meta {
       display: flex;
       flex-direction: column;
@@ -183,6 +205,7 @@
     }
 
     /* Date shown at top */
+
     .post-timestamp {
       font-size: 11px;
       color: #777;
@@ -212,6 +235,7 @@
     }
 
     /* Instagram */
+
     .instagram-container {
       width: 100%;
       flex: 1;
@@ -226,6 +250,7 @@
     }
 
     /* Empty / error */
+
     .message {
       text-align: center;
       padding: 40px 20px;
@@ -234,6 +259,7 @@
     }
 
     /* Footer */
+
     footer {
       text-align: center;
       padding: 25px;
@@ -242,6 +268,7 @@
     }
 
     /* Mobile */
+
     @media (max-width: 600px) {
 
       header {
@@ -257,7 +284,9 @@
       }
 
       #posts {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+
         gap: 10px;
       }
 
@@ -298,30 +327,58 @@
       }
 
     }
+
   </style>
+
 </head>
+
 
 <body>
 
+
   <!-- Header -->
+
   <header>
+
     <h1>📸 NK Instagram</h1>
+
     <p>My Instagram collection</p>
+
   </header>
+
 
   <main>
 
+
     <!-- Category and Date filters -->
+
     <div class="controls">
+
 
       <div id="filters"></div>
 
-      <div class="date-filter">
-        <label for="fromDate">From:</label>
-        <input type="date" id="fromDate">
 
-        <label for="toDate">To:</label>
-        <input type="date" id="toDate">
+      <div class="date-filter">
+
+        <label for="fromDate">
+          From:
+        </label>
+
+        <input
+          type="date"
+          id="fromDate"
+        >
+
+
+        <label for="toDate">
+          To:
+        </label>
+
+        <input
+          type="date"
+          id="toDate"
+        >
+
 
         <button
           class="date-action-btn"
@@ -330,41 +387,57 @@
           🔎 Apply
         </button>
 
+
         <button
           class="date-action-btn date-clear-btn"
           onclick="clearDateFilter()"
         >
           ✕ Clear
         </button>
+
       </div>
 
-      <button class="refresh-btn" onclick="loadPosts()">
+
+      <button
+        class="refresh-btn"
+        onclick="loadPosts()"
+      >
         🔄 Refresh
       </button>
 
     </div>
 
+
     <!-- Status -->
+
     <div id="status">
       Loading Instagram posts...
     </div>
 
+
     <!-- Posts -->
+
     <section id="posts"></section>
+
 
   </main>
 
+
   <footer>
+
     Instagram posts are embedded directly from Instagram.
+
   </footer>
+
 
 
   <script>
 
+
     /*
-      =====================================================
-      CLOUDFLARE WORKER
-      =====================================================
+    =====================================================
+    CLOUDFLARE WORKER
+    =====================================================
     */
 
     const WORKER_URL =
@@ -372,21 +445,24 @@
 
 
     /*
-      =====================================================
-      GLOBAL DATA
-      =====================================================
+    =====================================================
+    GLOBAL DATA
+    =====================================================
     */
 
     let allPosts = [];
+
     let activeCategory = "All";
+
     let activeFromDate = "";
+
     let activeToDate = "";
 
 
     /*
-      =====================================================
-      LOAD POSTS FROM GOOGLE SHEET THROUGH WORKER
-      =====================================================
+    =====================================================
+    LOAD POSTS FROM GOOGLE SHEET THROUGH WORKER
+    =====================================================
     */
 
     async function loadPosts() {
@@ -397,61 +473,102 @@
       const postsContainer =
         document.getElementById("posts");
 
+
       status.textContent =
         "Loading Instagram posts...";
 
+
       postsContainer.innerHTML = "";
+
 
       try {
 
         const response =
           await fetch(WORKER_URL);
 
+
         if (!response.ok) {
+
           throw new Error(
             "Worker request failed"
           );
+
         }
+
 
         const data =
           await response.json();
 
+
         if (!data.success) {
+
           throw new Error(
             data.error ||
             "Unable to load posts"
           );
+
         }
+
+
+        /*
+        IMPORTANT:
+
+        The posts come from the Worker.
+
+        The Date value must come from:
+
+            Google Sheet / CSV
+            Date column
+
+        The HTML does NOT generate
+        a post date.
+        */
 
         allPosts =
           data.posts || [];
 
+
         createFilters();
 
+
         displayPosts();
+
 
       } catch (error) {
 
         console.error(error);
 
+
         status.textContent =
           "Unable to load Instagram posts.";
 
+
         postsContainer.innerHTML = `
+
           <div class="message">
-            ❌ Unable to load posts.<br><br>
+
+            ❌ Unable to load posts.
+
+            <br>
+            <br>
+
             Please check the Cloudflare Worker
             and Google Sheet.
+
           </div>
+
         `;
+
       }
+
     }
 
 
+
     /*
-      =====================================================
-      CREATE CATEGORY FILTERS
-      =====================================================
+    =====================================================
+    CREATE CATEGORY FILTERS
+    =====================================================
     */
 
     function createFilters() {
@@ -459,12 +576,16 @@
       const filtersContainer =
         document.getElementById("filters");
 
+
       filtersContainer.innerHTML = "";
 
+
       const categories = [
+
         "All",
 
         ...new Set(
+
           allPosts
             .map(
               post => post.category
@@ -472,8 +593,11 @@
             .filter(
               category => category
             )
+
         )
+
       ];
+
 
       categories.forEach(
         category => {
@@ -483,8 +607,10 @@
               "button"
             );
 
+
           button.className =
             "filter-btn";
+
 
           if (
             category ===
@@ -494,10 +620,13 @@
             button.classList.add(
               "active"
             );
+
           }
+
 
           button.textContent =
             category;
+
 
           button.onclick =
             function () {
@@ -508,19 +637,24 @@
               createFilters();
 
               displayPosts();
+
             };
+
 
           filtersContainer
             .appendChild(button);
+
         }
       );
+
     }
 
 
+
     /*
-      =====================================================
-      NORMALIZE INSTAGRAM URL
-      =====================================================
+    =====================================================
+    NORMALIZE INSTAGRAM URL
+    =====================================================
     */
 
     function normalizeInstagramUrl(url) {
@@ -529,40 +663,53 @@
         return null;
       }
 
+
       try {
 
         const parsed =
           new URL(
-            url.trim()
+            String(url).trim()
           );
 
+
+        const hostname =
+          parsed.hostname.toLowerCase();
+
+
         if (
-          parsed.hostname !==
+          hostname !==
             "www.instagram.com" &&
-          parsed.hostname !==
+          hostname !==
             "instagram.com"
         ) {
 
           return null;
+
         }
+
 
         const parts =
           parsed.pathname
             .split("/")
             .filter(Boolean);
 
+
         if (
           parts.length < 2
         ) {
 
           return null;
+
         }
+
 
         const type =
           parts[0];
 
+
         const id =
           parts[1];
+
 
         if (
           type !== "p" &&
@@ -571,370 +718,740 @@
         ) {
 
           return null;
+
         }
 
-        return `
-          https://www.instagram.com/
-          ${type}/${id}/
-        `.replace(/\s+/g, "");
+
+        return (
+          `https://www.instagram.com/` +
+          `${type}/${id}/`
+        );
+
 
       } catch {
 
         return null;
+
       }
+
     }
 
 
+
     /*
-      =====================================================
-      GET DATE ENTERED IN GOOGLE SHEET
-      =====================================================
+    =====================================================
+    DISPLAY DATE
+    =====================================================
+
+    IMPORTANT:
+
+    The displayed date is taken DIRECTLY
+    from the Google Sheet / CSV Date column.
+
+    No browser date.
+    No Instagram date.
+    No automatic date.
+    =====================================================
     */
 
     function formatPostTimestamp(post) {
 
-      // Display ONLY the Google Sheet Date column.
       if (
         post.Date === null ||
         post.Date === undefined ||
         String(post.Date).trim() === ""
       ) {
+
         return "Date unavailable";
+
       }
 
-      return String(post.Date).trim();
+
+      return String(
+        post.Date
+      ).trim();
+
     }
 
+
+
     /*
-      =====================================================
-      DATE FILTER HELPERS
-      =====================================================
+    =====================================================
+    PARSE GOOGLE SHEET DATE
+    =====================================================
+
+    IMPORTANT:
+
+    ONLY post.Date is used.
+
+    This function does not decide what
+    the post date should be.
+
+    It only converts the Sheet value
+    into a JavaScript Date temporarily
+    so the filter can compare it.
+    =====================================================
     */
 
     function parsePostDate(post) {
 
-      /*
-        IMPORTANT:
-        ONLY the Google Sheet "Date" column is used.
-        No Instagram date or other timestamp field is used.
-      */
 
       if (
         post.Date === null ||
         post.Date === undefined ||
         String(post.Date).trim() === ""
       ) {
+
         return null;
+
       }
 
-      const value = String(post.Date).trim();
 
-      // YYYY-MM-DD / YYYY/MM/DD
-      let match = value.match(
-        /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/
-      );
+      const value =
+        String(
+          post.Date
+        ).trim();
+
+
+
+      /*
+      -----------------------------------------------------
+      FORMAT 1
+
+      YYYY-MM-DD
+      YYYY/MM/DD
+
+      Example:
+
+      2026-10-07
+      -----------------------------------------------------
+      */
+
+      let match =
+        value.match(
+          /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/
+        );
+
 
       if (match) {
+
         return makeValidDate(
+
           Number(match[1]),
+
           Number(match[2]),
+
           Number(match[3])
+
         );
+
       }
 
-      // DD/MM/YYYY or DD-MM-YYYY
-      match = value.match(
-        /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/
-      );
+
+
+      /*
+      -----------------------------------------------------
+      FORMAT 2
+
+      DD/MM/YYYY
+      DD-MM-YYYY
+
+      Example:
+
+      07/10/2026
+      07-10-2026
+      -----------------------------------------------------
+      */
+
+      match =
+        value.match(
+          /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/
+        );
+
 
       if (match) {
-        let year = Number(match[3]);
+
+        let year =
+          Number(match[3]);
+
 
         if (year < 100) {
+
           year += 2000;
+
         }
+
 
         return makeValidDate(
+
           year,
+
           Number(match[2]),
+
           Number(match[1])
+
         );
+
       }
 
-      // DD Mon YYYY / DD Month YYYY
-      match = value.match(
-        /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{2,4})/
-      );
+
+
+      /*
+      -----------------------------------------------------
+      FORMAT 3
+
+      DD Mon YYYY
+      DD Month YYYY
+
+      Example:
+
+      07 Oct 2026
+      7 October 2026
+      -----------------------------------------------------
+      */
+
+      match =
+        value.match(
+          /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{2,4})/
+        );
+
 
       if (match) {
-        let year = Number(match[3]);
+
+        let year =
+          Number(match[3]);
+
 
         if (year < 100) {
+
           year += 2000;
+
         }
+
 
         const monthNames = [
-          "jan", "feb", "mar", "apr", "may", "jun",
-          "jul", "aug", "sep", "oct", "nov", "dec"
+
+          "jan",
+          "feb",
+          "mar",
+          "apr",
+          "may",
+          "jun",
+          "jul",
+          "aug",
+          "sep",
+          "oct",
+          "nov",
+          "dec"
+
         ];
 
-        const monthText = match[2].toLowerCase();
-        const monthIndex = monthNames.findIndex(
-          month => monthText.startsWith(month)
-        );
 
-        if (monthIndex !== -1) {
-          return makeValidDate(
-            year,
-            monthIndex + 1,
-            Number(match[1])
+        const monthText =
+          match[2].toLowerCase();
+
+
+        const monthIndex =
+          monthNames.findIndex(
+
+            month =>
+              monthText.startsWith(
+                month
+              )
+
           );
+
+
+        if (
+          monthIndex !== -1
+        ) {
+
+          return makeValidDate(
+
+            year,
+
+            monthIndex + 1,
+
+            Number(match[1])
+
+          );
+
         }
+
       }
 
-      // Google Sheets may sometimes return a full date/time string.
-      // Still use ONLY post.Date.
-      const fallback = new Date(value);
 
-      if (!isNaN(fallback.getTime())) {
+
+      /*
+      -----------------------------------------------------
+      FORMAT 4
+
+      Google Sheet may return a full
+      date/time value.
+
+      Example:
+
+      10/7/2026, 00:00:00
+
+      This is STILL based only on
+      post.Date.
+      -----------------------------------------------------
+      */
+
+      const fallback =
+        new Date(value);
+
+
+      if (
+        !isNaN(
+          fallback.getTime()
+        )
+      ) {
+
         return new Date(
+
           fallback.getFullYear(),
+
           fallback.getMonth(),
+
           fallback.getDate()
+
         );
+
       }
+
+
+      /*
+      Could not understand the
+      Sheet Date value.
+      */
+
+      console.warn(
+        "Unable to parse Sheet Date:",
+        value
+      );
+
 
       return null;
+
     }
 
 
-    function makeValidDate(year, month, day) {
 
-      const date = new Date(
-        year,
-        month - 1,
-        day
-      );
+    /*
+    =====================================================
+    VALIDATE DATE
+    =====================================================
+    */
 
-      // Prevent JavaScript from accepting invalid dates
-      // such as 31/02/2026.
+    function makeValidDate(
+      year,
+      month,
+      day
+    ) {
+
+      const date =
+        new Date(
+          year,
+          month - 1,
+          day
+        );
+
+
+      /*
+      Prevent invalid dates.
+
+      Example:
+
+      31/02/2026
+      */
+
       if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
+
+        date.getFullYear() !==
+          year ||
+
+        date.getMonth() !==
+          month - 1 ||
+
+        date.getDate() !==
+          day
+
       ) {
+
         return null;
+
       }
 
+
       return date;
+
     }
 
 
-    function dateOnly(date) {
 
-      return new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-      );
-    }
-
+    /*
+    =====================================================
+    APPLY DATE FILTER
+    =====================================================
+    */
 
     function applyDateFilter() {
 
+
       const fromInput =
-        document.getElementById("fromDate").value;
+        document.getElementById(
+          "fromDate"
+        ).value;
+
 
       const toInput =
-        document.getElementById("toDate").value;
+        document.getElementById(
+          "toDate"
+        ).value;
+
 
       if (
+
         fromInput &&
         toInput &&
         fromInput > toInput
+
       ) {
-        alert("From date cannot be later than To date.");
+
+        alert(
+          "From date cannot be later than To date."
+        );
+
         return;
+
       }
 
-      activeFromDate = fromInput;
-      activeToDate = toInput;
+
+      activeFromDate =
+        fromInput;
+
+
+      activeToDate =
+        toInput;
+
 
       displayPosts();
+
     }
 
+
+
+    /*
+    =====================================================
+    CLEAR DATE FILTER
+    =====================================================
+    */
 
     function clearDateFilter() {
 
-      document.getElementById("fromDate").value = "";
-      document.getElementById("toDate").value = "";
+
+      document.getElementById(
+        "fromDate"
+      ).value = "";
+
+
+      document.getElementById(
+        "toDate"
+      ).value = "";
+
 
       activeFromDate = "";
+
       activeToDate = "";
 
+
       displayPosts();
+
     }
 
+
+
+    /*
+    =====================================================
+    MATCH DATE FILTER
+    =====================================================
+    */
 
     function matchesDateFilter(post) {
 
-      if (!activeFromDate && !activeToDate) {
+
+      /*
+      If no date filter is selected,
+      show all posts.
+      */
+
+      if (
+        !activeFromDate &&
+        !activeToDate
+      ) {
+
         return true;
+
       }
 
-      const postDate = parsePostDate(post);
 
-      // If the Sheet Date is missing/invalid, it cannot
-      // match an active date filter.
+      /*
+      Get date ONLY from:
+
+          post.Date
+
+      which comes from the
+      Google Sheet / CSV.
+      */
+
+      const postDate =
+        parsePostDate(post);
+
+
+      /*
+      Missing/invalid Sheet date
+      cannot match a selected filter.
+      */
+
       if (!postDate) {
+
         return false;
+
       }
 
-      // Convert the Sheet date to the exact same format
-      // used by the HTML date inputs: YYYY-MM-DD.
+
+      /*
+      Convert Sheet date to:
+
+          YYYY-MM-DD
+
+      */
+
+      const year =
+        postDate.getFullYear();
+
+
+      const month =
+        String(
+          postDate.getMonth() + 1
+        ).padStart(
+          2,
+          "0"
+        );
+
+
+      const day =
+        String(
+          postDate.getDate()
+        ).padStart(
+          2,
+          "0"
+        );
+
+
       const postDateString =
-        postDate.getFullYear() +
-        "-" +
-        String(postDate.getMonth() + 1).padStart(2, "0") +
-        "-" +
-        String(postDate.getDate()).padStart(2, "0");
+        `${year}-${month}-${day}`;
+
+
+
+      /*
+      FROM DATE
+      */
 
       if (
+
         activeFromDate &&
-        postDateString < activeFromDate
+        postDateString <
+          activeFromDate
+
       ) {
+
         return false;
+
       }
 
+
+
+      /*
+      TO DATE
+      */
+
       if (
+
         activeToDate &&
-        postDateString > activeToDate
+        postDateString >
+          activeToDate
+
       ) {
+
         return false;
+
       }
+
 
       return true;
+
     }
 
+
+
     /*
-      =====================================================
-      DISPLAY POSTS
-      =====================================================
+    =====================================================
+    DISPLAY POSTS
+    =====================================================
     */
 
     function displayPosts() {
+
 
       const postsContainer =
         document.getElementById(
           "posts"
         );
 
+
       const status =
         document.getElementById(
           "status"
         );
 
+
       postsContainer.innerHTML =
         "";
 
 
-      let filteredPosts;
+      /*
+      Filter by:
+
+      1. Category
+      2. Sheet Date
+      */
+
+      const filteredPosts =
+        allPosts.filter(
+          post => {
 
 
-      filteredPosts = allPosts.filter(
-        post => {
+            const categoryMatches =
 
-          const categoryMatches =
-            activeCategory === "All" ||
-            post.category === activeCategory;
+              activeCategory === "All" ||
 
-          const dateMatches =
-            matchesDateFilter(post);
+              post.category ===
+                activeCategory;
 
-          return categoryMatches && dateMatches;
-        }
-      );
+
+            const dateMatches =
+              matchesDateFilter(
+                post
+              );
+
+
+            return (
+              categoryMatches &&
+              dateMatches
+            );
+
+          }
+        );
+
 
 
       /*
-        No posts
+      No posts
       */
 
       if (
-        filteredPosts.length ===
-        0
+        filteredPosts.length === 0
       ) {
 
         status.textContent =
           "";
 
+
         postsContainer.innerHTML = `
+
           <div class="message">
+
             No Instagram posts found.
+
           </div>
+
         `;
 
+
         return;
+
       }
 
 
+
       /*
-        Number of posts
+      Filter description
       */
 
-      let filterDescription = "";
+      let filterDescription =
+        "";
 
-      if (activeFromDate || activeToDate) {
+
+      if (
+        activeFromDate ||
+        activeToDate
+      ) {
+
 
         const fromText =
           activeFromDate
-            ? new Date(
-                activeFromDate + "T00:00:00"
-              ).toLocaleDateString(
-                "en-IN",
-                {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric"
-                }
+
+            ? formatFilterDate(
+                activeFromDate
               )
+
             : "Beginning";
+
 
         const toText =
           activeToDate
-            ? new Date(
-                activeToDate + "T00:00:00"
-              ).toLocaleDateString(
-                "en-IN",
-                {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric"
-                }
+
+            ? formatFilterDate(
+                activeToDate
               )
+
             : "Today";
+
 
         filterDescription =
           ` | ${fromText} → ${toText}`;
+
       }
 
-      status.textContent =
-        `${
-          filteredPosts.length
-        } Instagram post${
-          filteredPosts.length ===
-          1
-            ? ""
-            : "s"
-        }${filterDescription}`;
 
 
       /*
-        Create cards
+      Status
+      */
+
+      status.textContent =
+
+        `${filteredPosts.length} Instagram post` +
+
+        `${
+          filteredPosts.length === 1
+            ? ""
+            : "s"
+        }` +
+
+        filterDescription;
+
+
+
+      /*
+      Create Instagram cards
       */
 
       filteredPosts.forEach(
         post => {
+
 
           const instagramUrl =
             normalizeInstagramUrl(
@@ -942,8 +1459,14 @@
             );
 
 
+          /*
+          Skip invalid Instagram URL
+          */
+
           if (!instagramUrl) {
+
             return;
+
           }
 
 
@@ -951,6 +1474,7 @@
             document.createElement(
               "article"
             );
+
 
           card.className =
             "post-card";
@@ -960,44 +1484,62 @@
 
             <div class="post-meta">
 
-              <!-- Date entered in Sheet -->
+
+              <!-- Date from Google Sheet -->
+
               <div class="post-timestamp">
+
                 🕒 Posted:
+
                 ${escapeHtml(
                   formatPostTimestamp(
                     post
                   )
                 )}
+
               </div>
 
 
               <div class="post-top-row">
 
+
                 <span class="category">
+
                   ${escapeHtml(
                     post.category ||
                     "Other"
                   )}
+
                 </span>
 
+
                 <span class="media">
+
                   ${escapeHtml(
                     post.media ||
                     "Photo"
                   )}
+
                 </span>
 
+
               </div>
+
 
             </div>
 
 
             <div class="instagram-container">
 
+
               <blockquote
+
                 class="instagram-media"
+
                 data-instgrm-permalink="${instagramUrl}"
+
                 data-instgrm-version="14"
+
                 style="
                   background:#FFF;
                   border:0;
@@ -1013,6 +1555,7 @@
                   padding:0;
                   width:calc(100% - 2px);
                 "
+
               >
 
                 <div
@@ -1022,13 +1565,18 @@
                 >
 
                   <a
+
                     href="${instagramUrl}"
+
                     target="_blank"
+
                     rel="noopener noreferrer"
+
                     style="
                       text-decoration:none;
                       color:#333;
                     "
+
                   >
 
                     View this post
@@ -1040,7 +1588,9 @@
 
               </blockquote>
 
+
             </div>
+
           `;
 
 
@@ -1052,20 +1602,80 @@
 
 
       /*
-        Process Instagram embeds
+      Process Instagram embeds
       */
 
       processInstagramEmbeds();
+
     }
 
 
+
     /*
-      =====================================================
-      PROCESS INSTAGRAM EMBEDS
-      =====================================================
+    =====================================================
+    FORMAT SELECTED FILTER DATE
+    =====================================================
+    */
+
+    function formatFilterDate(
+      value
+    ) {
+
+
+      const parts =
+        value.split("-");
+
+
+      if (
+        parts.length !== 3
+      ) {
+
+        return value;
+
+      }
+
+
+      const year =
+        Number(parts[0]);
+
+
+      const month =
+        Number(parts[1]);
+
+
+      const day =
+        Number(parts[2]);
+
+
+      const date =
+        new Date(
+          year,
+          month - 1,
+          day
+        );
+
+
+      return date.toLocaleDateString(
+        "en-IN",
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric"
+        }
+      );
+
+    }
+
+
+
+    /*
+    =====================================================
+    PROCESS INSTAGRAM EMBEDS
+    =====================================================
     */
 
     function processInstagramEmbeds() {
+
 
       if (
 
@@ -1085,14 +1695,17 @@
           processInstagramEmbeds,
           500
         );
+
       }
+
     }
 
 
+
     /*
-      =====================================================
-      HTML ESCAPE
-      =====================================================
+    =====================================================
+    HTML ESCAPE
+    =====================================================
     */
 
     function escapeHtml(value) {
@@ -1123,48 +1736,90 @@
           /'/g,
           "&#039;"
         );
+
     }
 
 
+
     /*
-      =====================================================
-      START WEBSITE
-      =====================================================
+    =====================================================
+    FROM DATE / TO DATE CONTROLS
+    =====================================================
     */
 
+    document
+      .getElementById("fromDate")
+      .addEventListener(
+        "change",
+        function () {
 
-    // Keep the From/To date controls consistent.
-    document.getElementById("fromDate").addEventListener(
-      "change",
-      function () {
-        const toDate =
-          document.getElementById("toDate");
+          const toDate =
+            document.getElementById(
+              "toDate"
+            );
 
-        if (this.value) {
-          toDate.min = this.value;
-        } else {
-          toDate.removeAttribute("min");
+
+          if (this.value) {
+
+            toDate.min =
+              this.value;
+
+          } else {
+
+            toDate.removeAttribute(
+              "min"
+            );
+
+          }
+
         }
-      }
-    );
+      );
 
-    document.getElementById("toDate").addEventListener(
-      "change",
-      function () {
-        const fromDate =
-          document.getElementById("fromDate");
 
-        if (this.value) {
-          fromDate.max = this.value;
-        } else {
-          fromDate.removeAttribute("max");
+
+    document
+      .getElementById("toDate")
+      .addEventListener(
+        "change",
+        function () {
+
+          const fromDate =
+            document.getElementById(
+              "fromDate"
+            );
+
+
+          if (this.value) {
+
+            fromDate.max =
+              this.value;
+
+          } else {
+
+            fromDate.removeAttribute(
+              "max"
+            );
+
+          }
+
         }
-      }
-    );
+      );
+
+
+
+    /*
+    =====================================================
+    START WEBSITE
+    =====================================================
+    */
 
     loadPosts();
 
+
   </script>
 
+
 </body>
+
 </html>
+```
