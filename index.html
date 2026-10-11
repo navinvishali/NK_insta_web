@@ -1477,50 +1477,42 @@ function displayPosts() {
 
       postsContainer.appendChild(card);
 
-      // Browser-only download: works when the Sheet/Worker provides a direct,
-      // accessible media-file URL. Instagram post URLs alone are not media URLs.
+      // Ask the Cloudflare Worker to resolve this public Instagram post URL
+      // to an accessible media file, then stream the file back for download.
       const downloadButton = card.querySelector(".download-btn");
       downloadButton.addEventListener("click", async () => {
-        const candidates = [
-          post.downloadUrl, post.download_url,
-          post.mediaUrl, post.media_url,
-          post.videoUrl, post.video_url,
-          post.imageUrl, post.image_url,
-          post.media_url_direct, post.directMediaUrl
-        ];
-        const rawUrl = candidates.find(value => typeof value === "string" && value.trim());
-        let mediaUrl = null;
-        try {
-          if (rawUrl) {
-            const parsed = new URL(rawUrl.trim());
-            if (parsed.protocol === "https:" || parsed.protocol === "http:") mediaUrl = parsed.href;
-          }
-        } catch (_) {}
-
-        if (!mediaUrl) {
-          alert("Download unavailable for this post: your Google Sheet/Worker provides the Instagram post URL, but not a direct image/video file URL. This browser-only page cannot extract the media from Instagram's embedded player. Add a direct, authorized media URL in a field such as mediaUrl or downloadUrl to enable downloading.");
-          return;
-        }
-
         downloadButton.disabled = true;
         const originalLabel = downloadButton.textContent;
-        downloadButton.textContent = "Preparing…";
+        downloadButton.textContent = "Finding media…";
         try {
-          // Fetch/blob enables a real download only when the media host permits CORS.
-          const response = await fetch(mediaUrl, { mode: "cors", credentials: "omit" });
-          if (!response.ok) throw new Error("Media request was not successful");
+          const mediaType = String(post.media || "Photo");
+          const downloadEndpoint = `${WORKER_URL}?downloadPost=1&url=${encodeURIComponent(instagramUrl)}&media=${encodeURIComponent(mediaType)}`;
+          const response = await fetch(downloadEndpoint, { mode: "cors", credentials: "omit" });
+          const contentType = (response.headers.get("content-type") || "").toLowerCase();
+          if (!response.ok || contentType.includes("application/json")) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(body.error || `Download failed (HTTP ${response.status}).`);
+          }
+          if (!contentType.startsWith("image/") && !contentType.startsWith("video/")) {
+            throw new Error("Instagram did not provide a downloadable image or video for this post.");
+          }
           const blob = await response.blob();
           const objectUrl = URL.createObjectURL(blob);
-          const extension = (blob.type.split("/")[1] || "bin").split(";")[0].replace("jpeg", "jpg");
+          const extension = contentType.includes("video/mp4") ? "mp4" :
+            contentType.includes("video/webm") ? "webm" :
+            contentType.includes("image/png") ? "png" :
+            contentType.includes("image/webp") ? "webp" :
+            contentType.includes("image/gif") ? "gif" : "jpg";
+          const safeName = String(post.shortcode || instagramUrl.split("/").filter(Boolean).pop() || "instagram-media").replace(/[^a-z0-9_-]/gi, "_");
           const link = document.createElement("a");
           link.href = objectUrl;
-          link.download = `instagram-${String(post.id || post.shortcode || "media").replace(/[^a-z0-9_-]/gi, "_")}.${extension}`;
+          link.download = `instagram-${safeName}.${extension}`;
           document.body.appendChild(link);
           link.click();
           link.remove();
-          setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 3000);
         } catch (error) {
-          alert("The browser could not download this media URL. The file host may block browser cross-origin downloads (CORS). No page was opened. To enable downloading, use an authorized media URL from a host that permits browser access, or use a permitted download flow outside this browser-only page.");
+          alert(`Could not download this post. ${error.message || "Instagram may require login or may block access to this media."} No original post was opened.`);
         } finally {
           downloadButton.disabled = false;
           downloadButton.textContent = originalLabel;
