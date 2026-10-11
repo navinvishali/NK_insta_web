@@ -1498,8 +1498,7 @@ function displayPosts() {
         } catch (_) {}
 
         if (!mediaUrl) {
-          alert("A direct media URL is not available for this post. Opening the original Instagram post instead.");
-          window.open(instagramUrl, "_blank", "noopener,noreferrer");
+          alert("Download unavailable for this post: your Google Sheet/Worker provides the Instagram post URL, but not a direct image/video file URL. This browser-only page cannot extract the media from Instagram's embedded player. Add a direct, authorized media URL in a field such as mediaUrl or downloadUrl to enable downloading.");
           return;
         }
 
@@ -1521,8 +1520,7 @@ function displayPosts() {
           link.remove();
           setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
         } catch (error) {
-          alert("The browser could not download this media directly (the host may block cross-origin access). Opening the direct media URL instead.");
-          window.open(mediaUrl, "_blank", "noopener,noreferrer");
+          alert("The browser could not download this media URL. The file host may block browser cross-origin downloads (CORS). No page was opened. To enable downloading, use an authorized media URL from a host that permits browser access, or use a permitted download flow outside this browser-only page.");
         } finally {
           downloadButton.disabled = false;
           downloadButton.textContent = originalLabel;
