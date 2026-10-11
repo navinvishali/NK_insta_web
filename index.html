@@ -297,6 +297,27 @@
       }
     }
 
+
+    .post-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 2px;
+    }
+
+    .download-btn {
+      border: 0;
+      border-radius: 18px;
+      padding: 7px 12px;
+      background: #833ab4;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .download-btn:hover { opacity: 0.9; }
+    .download-btn:disabled { opacity: 0.6; cursor: wait; }
+
   </style>
 
 </head>
@@ -1394,6 +1415,8 @@ function displayPosts() {
 
             </span>
 
+            <button type="button" class="download-btn" aria-label="Download accessible media">⬇ Download</button>
+
           </div>
 
         </div>
@@ -1453,6 +1476,58 @@ function displayPosts() {
 
 
       postsContainer.appendChild(card);
+
+      // Browser-only download: works when the Sheet/Worker provides a direct,
+      // accessible media-file URL. Instagram post URLs alone are not media URLs.
+      const downloadButton = card.querySelector(".download-btn");
+      downloadButton.addEventListener("click", async () => {
+        const candidates = [
+          post.downloadUrl, post.download_url,
+          post.mediaUrl, post.media_url,
+          post.videoUrl, post.video_url,
+          post.imageUrl, post.image_url,
+          post.media_url_direct, post.directMediaUrl
+        ];
+        const rawUrl = candidates.find(value => typeof value === "string" && value.trim());
+        let mediaUrl = null;
+        try {
+          if (rawUrl) {
+            const parsed = new URL(rawUrl.trim());
+            if (parsed.protocol === "https:" || parsed.protocol === "http:") mediaUrl = parsed.href;
+          }
+        } catch (_) {}
+
+        if (!mediaUrl) {
+          alert("A direct media URL is not available for this post. Opening the original Instagram post instead.");
+          window.open(instagramUrl, "_blank", "noopener,noreferrer");
+          return;
+        }
+
+        downloadButton.disabled = true;
+        const originalLabel = downloadButton.textContent;
+        downloadButton.textContent = "Preparing…";
+        try {
+          // Fetch/blob enables a real download only when the media host permits CORS.
+          const response = await fetch(mediaUrl, { mode: "cors", credentials: "omit" });
+          if (!response.ok) throw new Error("Media request was not successful");
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          const extension = (blob.type.split("/")[1] || "bin").split(";")[0].replace("jpeg", "jpg");
+          const link = document.createElement("a");
+          link.href = objectUrl;
+          link.download = `instagram-${String(post.id || post.shortcode || "media").replace(/[^a-z0-9_-]/gi, "_")}.${extension}`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+        } catch (error) {
+          alert("The browser could not download this media directly (the host may block cross-origin access). Opening the direct media URL instead.");
+          window.open(mediaUrl, "_blank", "noopener,noreferrer");
+        } finally {
+          downloadButton.disabled = false;
+          downloadButton.textContent = originalLabel;
+        }
+      });
 
     }
   );
